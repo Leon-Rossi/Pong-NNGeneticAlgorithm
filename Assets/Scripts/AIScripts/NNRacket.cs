@@ -17,12 +17,13 @@ public class NNRacket : Racket
 
     bool flagFirstMove = true;
     int lives;
-    int maxLives = 0;
+    int maxLives = 5;
 
     public Text fitnessText;
     float bestFitnessValue = 0;
 
     public List<List<List<List<float>>>> currentNN;
+    public List<List<List<List<float>>>> testNN;
 
     public Transform ball;
     public AIControl aiControl;
@@ -30,6 +31,12 @@ public class NNRacket : Racket
     public GameObject ballObject;
 
     public NeuralNetworkController neuralNetworkController;
+
+    float successfulHits;
+    public float totalHits;
+
+    bool displayInfo;
+    public bool isTesting;
 
     void Awake()
     {
@@ -48,11 +55,22 @@ public class NNRacket : Racket
     public override void NextNN()
     {
         lives -= 1;
+        totalHits ++;
+        displayInfo = aiControl.displayInfo;
 
-        if(lives <= 0)
+        if(totalHits > 500)
+        {
+            lives = 0;
+        }
+
+        if(lives <= 0 && !isTesting)
         {
             fitnessValue += 0.1f;
-            print("Fitness Value: " + fitnessValue);
+            if(displayInfo)
+            {
+                print("Fitness Value: " + fitnessValue);
+            }
+
             aiControl.AISaves[currentAISave].SetFitnessScore(currentNNIndex, fitnessValue * fitnessValue);
 
             if(fitnessValue >= bestFitnessValue)
@@ -64,16 +82,38 @@ public class NNRacket : Racket
             fitnessValue = 0;
             flagFirstMove = true;
 
-            currentNNIndex = aiControl.AISaves[currentAISave].GiveNextNN();
+            currentNNIndex = aiControl.AISaves[currentAISave].GiveNextNN(displayInfo, this);
             currentNN = aiControl.AISaves[currentAISave].GiveNNFromIndex(currentNNIndex);
 
             gameObject.transform.position = new Vector3(gameObject.transform.position.x, 0, 0);
 
             lives = maxLives;
+            totalHits = 0;
+            successfulHits = 0;
+        }
+        else if(totalHits >= 3000 && isTesting)
+        {
+            EndTest();
         }
 
         
         ball.GetComponent<AITrainingBall>().Restart();
+    }
+
+    public void TestNN(List<List<List<List<float>>>> testNNInput)
+    {
+        lives = 100;
+        totalHits = 0;
+        successfulHits = 0;
+        testNN = testNNInput;
+        isTesting = true;
+    }
+
+    void EndTest()
+    {
+        isTesting = false;
+        print("Measurment: " + successfulHits/totalHits);
+        aiControl.AISaves[currentAISave].measurements.Add(successfulHits/totalHits);
     }
 
     protected override void Movement()
@@ -97,6 +137,10 @@ public class NNRacket : Racket
     void Movement2()
     {
         float[] moveAxesValue = neuralNetworkController.RunNN(currentNN, GetNNInputs2(), NeuralNetworkController.ActivationFunctions.Sigmoid).ToArray();
+        if(isTesting)
+        {
+            moveAxesValue = neuralNetworkController.RunNN(testNN, GetNNInputs2(), NeuralNetworkController.ActivationFunctions.Sigmoid).ToArray();
+        }
 
         if (moveAxesValue[0] < 0.4)
         {
@@ -147,6 +191,24 @@ public class NNRacket : Racket
         float difficulty = Mathf.Clamp((float)(Math.Abs(gameObject.transform.position.y - lastYPos)/0.5), 0, 1);
         float accuracy = Mathf.Clamp((float)((2.5 - Math.Abs(gameObject.transform.position.y - ballObject.transform.position.y))/2.5), 0, 0.9f);
 
-        fitnessValue += difficulty * accuracy + 0.1f;
+        if(!isTesting)
+        {
+            fitnessValue += difficulty * accuracy + 0.1f;
+        }
+
+        totalHits ++;
+        if(accuracy > 0)
+        {
+            successfulHits++;
+        }
+        if(totalHits > 500 && !isTesting)
+        {
+            NextNN();
+        }
+        else if(totalHits >= 3000)
+        {
+            totalHits -= 1;
+            NextNN();
+        }
     }
 }

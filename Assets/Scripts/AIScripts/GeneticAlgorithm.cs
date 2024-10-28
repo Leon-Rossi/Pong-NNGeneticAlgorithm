@@ -13,11 +13,6 @@ public class GeneticAlgorithm : MonoBehaviour
         List<List<List<List<List<float>>>>> output = new List<List<List<List<List<float>>>>>();
         list = SortListByFitness(list);
 
-        foreach(List<List<List<List<float>>>> i in list)
-        {
-            Debug.Log(Math.Sqrt(i[0][0][0][1]));
-        }
-
         float allFitnessValues = 0;
 
         foreach(List<List<List<List<float>>>> i in list)

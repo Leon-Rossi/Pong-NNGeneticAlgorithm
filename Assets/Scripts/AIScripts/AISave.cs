@@ -28,6 +28,8 @@ public class AISave
     public List<List<List<List<List<List<float>>>>>> allNeuralNetworks = new List<List<List<List<List<List<float>>>>>>();
     public List<List<List<List<List<float>>>>> bestNeuralNetworks = new List<List<List<List<List<float>>>>>();
 
+    public List<float> measurements = new List<float>();
+
     public AISave(float mutationFactorFloat, float mutationThreshholdFloat, int populationCountInt, int layerCountInt, int layerSizeInt, int inputCountInt, int outputCountInt, string NameString)
     {
         mutationFactor = mutationFactorFloat;
@@ -66,6 +68,7 @@ public class AISave
         currentNN[0] = allNeuralNetworks.Count()-1;
         currentNN[1] = 0;
 
+
         Debug.Log("Current Gen nr.: " + currentNN[0]);
     }
 
@@ -74,20 +77,25 @@ public class AISave
         return currentNN;
     }
 
-    public int[] GiveNextNN()
+    public int[] GiveNextNN(bool displayInfo, NNRacket racket)
     {
         if(currentNN[1] >= populationCount-1)
         {
             Debug.Log("Next Gen");
             SetUpNextGeneration();
             aIControl.SaveFile();
+
+            racket.TestNN(bestNeuralNetworks.Last());
         }
         else
         {
             currentNN[1] += 1; 
         }
 
-        Debug.Log("Current Population nr.: " + currentNN[1]);
+        if(displayInfo)
+        {
+            Debug.Log("Current Population nr.: " + currentNN[1]);
+        }
 
         return currentNN;
     }
