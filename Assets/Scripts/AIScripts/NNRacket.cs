@@ -17,7 +17,7 @@ public class NNRacket : Racket
 
     bool flagFirstMove = true;
     int lives;
-    int maxLives = 5;
+    int maxLives = 10;
 
     public Text fitnessText;
     float bestFitnessValue = 0;
